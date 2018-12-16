@@ -1,0 +1,19 @@
+{
+  "telegram-token": "",
+
+  "reddit-enabled": true,
+
+  "": "Reddit is blocking requests with default User-Agent so it's recommended to set something clear here.",
+  "user-agent": "BlopCot/1.0 (by /u/Benek_ & /u/kana74)",
+
+  "eligible-reddit-domains": ["reddit.com", "www.reddit.com", "old.reddit.com", "new.reddit.com", "np.reddit.com"],
+
+  "": "How many posts permalinks are going to be saved locally to be compared while checking for new posts.",
+  "saved-posts-amount": 10,
+
+  "": "Delay between requests in seconds",
+  "delay-between-requests": 3,
+
+  "": "Delay between fetching a new posts from Reddit in seconds",
+  "delay-between-fetch": 3600
+}
