@@ -4,14 +4,14 @@ import telegram.ext, json, os, requests, re, threading, time
 '''
 
 To do later:
-- Unsubscribe function
+- Unsubscribe function <-- DONE
 - Move to SQLite instead of using reddit.json for better performance.
 - Previews of subreddits - using a command (ex. /show /r/<subreddit>) would dump
 3 to 5 newest posts from it using private message to the requesting user.
 - Listing subscribed subreddits
 
-Last update: 16/12/2018 4:24 AM
-if a long time passed after that date we're lazy
+Last update: 18/12/2018 3:38 AM
+if a long time passed after that date we're a lazy
 
 '''
 
@@ -19,8 +19,8 @@ class blopcot:
 
     def __init__(self):
 
-        self.version = '1.0.16122018'
-        self.previous_versions = ['1.0.12122018', '1.0.13122018']
+        self.version = '1.0.18122018'
+        self.previous_versions = ['1.0.12122018', '1.0.13122018', '1.0.16122018']
 
         # Check if configuration file exists.
         if not os.path.isfile('./conf.json'):
@@ -55,11 +55,15 @@ class blopcot:
 
 
         # Log in to Telegram
+        print('Logging in to Telegram...')
         self.updater = telegram.ext.Updater(self.conf['telegram-token'])
 
         # Register commands
+        print('Registering commands...')
         self.updater.dispatcher.add_handler(telegram.ext.CommandHandler('start', self.start))
         self.updater.dispatcher.add_handler(telegram.ext.CommandHandler('subscribe', self.subscribe))
+        self.updater.dispatcher.add_handler(telegram.ext.CommandHandler('unsubscribe', self.unsubscribe))
+        self.updater.dispatcher.add_handler(telegram.ext.CommandHandler('listsubscribed', self.listsubscribed))
         self.updater.dispatcher.add_handler(telegram.ext.CommandHandler('startreddit', self.startreddit))
 
         # Run the bot
@@ -100,8 +104,8 @@ class blopcot:
                     self.reddit_db[chat_id] = list()
 
                 # Check if the subreddit is already subscribed.
-                if not url[2] in self.reddit_db[chat_id]:
-                    self.reddit_db[chat_id].append(url[2])
+                if not url[2].lower() in self.reddit_db[chat_id]:
+                    self.reddit_db[chat_id].append(url[2].lower())
                     subscribed_success.append(url[1] + url[2])
 
                 else:
@@ -124,6 +128,74 @@ class blopcot:
 
         # Return a message to user
         update.message.reply_text(complete_message)
+
+    def unsubscribe(self, bot, update):
+        # Find all links in a message
+        urls = re.findall('(http|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?',
+         update.message.text)
+
+        chat_id = str(update.message.chat_id)
+        print('Group with ID ' + chat_id + ' attemps to unsubscribe from ' + str(urls).strip('[]'))
+
+
+        for url in urls:
+            # Check if the given domain is supported.
+            print(url[1] + ' in self.conf.eligible-reddit-domains ==> ' + str(url[1] in self.conf['eligible-reddit-domains']))
+            if url[1] in self.conf['eligible-reddit-domains']:
+                print('AAAAAAAAAAAAAA PENISSSSS JEBANIEEEEEEEEEEEE AAAAAAAAAAAAAAAA DZIAAŁAM')
+
+                # Create a list if it doesn't exist yet.
+                print(chat_id + ' in self.reddit_db ==> ' + str(chat_id in self.reddit_db))
+                if not chat_id in self.reddit_db:
+                    print('Making a list for ' + chat_id)
+                    self.reddit_db[chat_id] = list()
+
+                print(chat_id + ' is currently subscribed to: ' + str(self.reddit_db[chat_id]))
+                print(chat_id + ' tries to unsubscribe from ' + url[2])
+
+                # Add ending slash to url if it doesn't exist already.
+                if not url[2].endswith('/'):
+                    print('Adding ending slash to ' + url[2])
+                    url[2] = url[2] + '/'
+
+                # Make the smol letters
+                subreddit = url[2].lower()
+                print('Changed to lowercase -> ' + subreddit)
+
+                print(subreddit + ' in self.reddit_db.chat_id ==> ' + str(subreddit in self.reddit_db[chat_id]))
+
+                # Remove entry from list.
+                if subreddit in self.reddit_db[chat_id]:
+                    self.reddit_db[chat_id].remove(subreddit)
+                    msg = subreddit + ' has been unsubscribed.'
+                else:
+                    msg = subreddit + ' was never subscribed.'
+
+                print(chat_id + ' ==> "' + msg + '"')
+
+                # Write changes
+                # https://i.imgur.com/RcGt5jX.png
+                print('Writing to file...')
+                with open('./reddit.json', 'w') as self.reddit:
+                    json.dump(self.reddit_db, self.reddit)
+                    self.reddit.close()
+
+                print('Done unsubscribing.')
+
+                # Return a message
+                update.message.reply_text(msg)
+
+    def listsubscribed(self, bot, update):
+
+        chat_id = str(update.message.chat_id)
+
+        # Convert list to string with separator.
+        list = ',\n'.join(self.reddit_db[chat_id])
+
+        update.message.reply_text(
+            'Your group (' + chat_id + ') is subscribed to:\n' + list
+        )
+
 
 
 
